@@ -6,11 +6,9 @@ services:
      volumes:
        - db_data:/var/lib/mysql
      restart: always
+     env_file: .env
      environment:
-       MYSQL_ROOT_PASSWORD: somewordpress
        MYSQL_DATABASE: wordpress
-       MYSQL_USER: wordpress
-       MYSQL_PASSWORD: wordpress
 
    wordpress:
      depends_on:
@@ -19,10 +17,38 @@ services:
      ports:
        - "8000:80"
      restart: always
+     volumes:
+       - wordpress_data:/var/www/html
+     env_file: .env
      environment:
        WORDPRESS_DB_HOST: db:3306
-       WORDPRESS_DB_USER: wordpress
-       WORDPRESS_DB_PASSWORD: wordpress
+       WORDPRESS_DB_USER: $MYSQL_USER
+       WORDPRESS_DB_PASSWORD: $MYSQL_PASSWORD
        WORDPRESS_DB_NAME: wordpress
+
+   nginx:
+     depends_on:
+       - wordpress
+     image: nginx:alpine
+     restart: unless-stopped
+     ports:
+       - 80:80
+       - 443:443
+     volumes:
+       - ./nginx-conf:/etc/nginx/conf.d
+       - wordpress_data:/var/www/html
+       - certbot_data:/etc/letsencrypt
+
+   certbot:
+     depends_on:
+       - nginx
+     image: certbot/certbot
+     volumes:
+       - certbot_data:/etc/letsencrypt
+       - wordpress_data:/var/www/html
+     command: certonly --webroot --webroot-path=/var/www/html --email example@email.com --agree-tos --no-eff-email --force-renewal -d example.com -d www.example.com
+
 volumes:
     db_data: {}
+    wordpress_data: {}
+    certbot_data: {}

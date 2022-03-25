@@ -1,7 +1,9 @@
-FROM python:3
+FROM python:3-alpine
 
-COPY magic_ball.py /
+RUN mkdir /app
 
-RUN pip install flask
+COPY magic_ball.py /app
+
+WORKDIR /app
 
 CMD [ "python", "./magic_ball.py" ]
